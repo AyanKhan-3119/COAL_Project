@@ -1,0 +1,758 @@
+﻿COAL PROJECT CODE AND SCREENSHOTS
+
+
+21K-3057 Affan Iqbal
+21K-3119 Ayan Khan
+21K-3093 Muhammad Ibrahim
+
+
+
+
+INCLUDE Irvine32.inc
+INCLUDE Macros.inc
+
+
+.data
+arr DWORD 108 DUP(0)
+deck_num BYTE 0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,10,11,12,10,11,12
+          BYTE 0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,10,11,12,10,11,12 
+          BYTE 0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,10,11,12,10,11,12
+          BYTE 0,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,10,11,12,10,11,12
+          BYTE 13,14,13,14,13,14,13,14
+deck_col BYTE 'r','r','r','r','r','r','r','r','r','r','r','r','r','r','r'
+          BYTE 'g','g','g','g','g','g','g','g','g','g','g','g','g','g','g'
+          BYTE 'b','b','b','b','b','b','b','b','b','b','b','b','b','b','b'
+          BYTE 'y','y','y','y','y','y','y','y','y','y','y','y','y','y','y'
+          BYTE 'w','w','w','w','w','w','w','w'
+deck_number DWORD 108 DUP(0)   ; The deck of UNO cards
+deck_color DWORD 108 DUP(0)   ; The deck of UNO cards
+
+
+deck_length DWORD 108
+player1_cards_number DWORD 18 DUP(0)   ; Player 1's cards numbers
+player2_cards_color DWORD 18 DUP(0)   ; Player 2's cards colors
+player2_cards_number DWORD 18 DUP(0)   ; Player 1's cards numbers
+player1_cards_color DWORD 18 DUP(0)   ; Player 2's cards colors
+player1_cards_length DWORD 8        ; Player 1's card length
+player2_cards_length DWORD 8        ; Player 2's card length
+top_card_number DWORD 0    ; The top card of the deck
+top_card_color DWORD 0    ; The top card of the deck
+turn DWORD 1    ; Indicates whose turn it is (1 for player 1, 2 for player 2)
+card_drawn_color DWORD 0
+card_drawn_number DWORD 0
+
+
+
+
+;CARD_SKIP  10
+;CARD_REVERSE  11
+;CARD_DRAW_TWO  12
+;CARD_WILD  13
+;CARD_DRAW_FOUR  14
+
+
+
+
+.code
+main PROC
+    call CRLF
+    ; Initialize the deck
+    call init_deck
+
+
+    ; Shuffle the deck
+    mwrite "Press any key to start = "
+    call ReadChar
+    call CRLF
+    call CRLF
+    mwrite "Shuffling the deck"
+    call CRLF
+    call CRLF
+    call shuffle_deck
+
+
+    ; Set Deck according to shuffled values
+    call Set_Deck
+
+
+    ; Print deck after shuffling
+    call Print_Deck
+    call Print_Deck_Player1
+    call Print_Deck_Player2
+
+
+    ; Deal the cards
+    mwrite "Press any key to deal cards = "
+    call ReadChar
+    call CRLF
+    call CRLF
+    mwrite "Distributing eight cards to each player"
+    call CRLF
+    call Deal_Cards
+    
+    ; Print deck after dealing
+    call Print_Deck
+    call Test1
+    call Print_Deck_Player1
+    call Print_Deck_Player2
+
+
+    ; Set the top card
+    call Card_Draw
+    call CRLF
+    mwrite "Press any key to start the game = "
+    call ReadChar
+    call CRLF
+    mov eax,card_drawn_color
+    mov top_card_color,eax
+    mov eax,card_drawn_number
+    mov top_card_number,eax
+    call CRLF
+
+
+    ; Play the game
+    call Play_Game
+
+
+    exit
+main ENDP
+
+
+Set PROC USES edx edi ecx eax ebx
+    
+    mov edx,OFFSET arr
+    mov esi,OFFSET deck_num
+    mov edi,OFFSET deck_number
+    mov ecx,108
+    L1:
+        mov ebx,0
+        mov eax,[edx]
+        add eax,esi
+        mov bl,[eax]
+        mov [edi],ebx
+        add edi,4
+        add edx,4
+    Loop L1
+
+
+    mov edx,OFFSET arr
+    mov esi,OFFSET deck_col
+    mov edi,OFFSET deck_color
+    mov ecx,108
+    L2:
+        mov ebx,0
+        mov eax,[edx]
+        add eax,esi
+        mov bl,[eax]
+        mov [edi],ebx
+        add edi,4
+        add esi,1
+        add edx,4
+    Loop L2
+
+
+    ret
+Set ENDP
+
+
+init_deck PROC
+    mov edx,OFFSET arr
+    mov ecx,108
+    L3:
+        push ecx
+        dec ecx
+        mov [edx],ecx
+        add edx,4
+        pop ecx
+    Loop L3
+    ret
+init_deck ENDP
+
+
+shuffle_deck PROC USES ebx ecx edx esi
+    mov eax, LENGTHOF arr
+    mov edx, OFFSET arr
+    shuffle_loop:
+    push eax
+    call RandomRange
+    mov ebx, eax
+    pop eax
+    mov esi, [edx + 4*eax]
+    mov ecx, [edx + 4*ebx]
+    mov [edx + 4*eax],ecx
+    mov [edx + 4*ebx],esi
+    dec eax
+    cmp eax, 0
+    jg shuffle_loop
+    mov edx,OFFSET arr
+    add edx,28
+    mov eax,2
+    mov [edx],eax
+    mwrite "index after shuffling = "
+    mov edx,OFFSET arr
+    LPA:
+        mov eax,[edx]
+        add edx,4
+        call WriteDec
+        mov eax,' '
+        call WriteChar
+    Loop LPA
+    call CRLF
+    ret
+shuffle_deck ENDP
+
+
+Print_Deck PROC USES edx edi ecx eax
+    call CRLF
+    mwrite "Deck = "
+    mov edx,OFFSET deck_color
+    mov edi,OFFSET deck_number
+    mov ecx,108
+    L1:
+        mov eax,[edx]
+        call WriteChar
+        mov eax,[edi]
+        call WriteDec
+        mov eax,' '
+        call WriteChar
+        add edx,4
+        add edi,4
+    Loop L1
+    call CRLF
+
+
+    ret
+Print_Deck ENDP
+
+
+Print_Deck_Player1 PROC USES edx edi ecx eax
+    call CRLF
+    mwrite "Player 1 Cards = "
+    mov edx,OFFSET player1_cards_color
+    mov edi,OFFSET player1_cards_number
+    mov ecx,18
+    LP1:
+        mov eax,[edx]
+        ;cmp eax,0
+        ;je notP1
+        call WriteChar
+        mov eax,[edi]
+        call WriteDec
+        mov eax,' '
+        call WriteChar
+        ;notP1:
+        add edx,4
+        add edi,4
+    Loop LP1
+    call CRLF
+    ret
+Print_Deck_Player1 ENDP
+
+
+Print_Deck_Player2 PROC USES edx edi ecx eax
+    call CRLF
+    mwrite "Player 2 Cards = "
+    mov edx,OFFSET player2_cards_color
+    mov edi,OFFSET player2_cards_number
+    mov ecx,18
+    LP1:
+        mov eax,[edx]
+        ;cmp eax,0
+        ;je notP1
+        call WriteChar
+        mov eax,[edi]
+        call WriteDec
+        mov eax,' '
+        call WriteChar
+        ;notP1:
+        add edx,4
+        add edi,4
+    Loop LP1
+    call CRLF
+    ret
+Print_Deck_Player2 ENDP
+
+
+Deal_Cards PROC USES ecx
+    
+    mov edx,OFFSET player1_cards_number
+    mov edi,OFFSET player1_cards_color
+    mov ecx,8
+    LCD1:       ;loop for card drawn for player 1
+        call Card_Draw
+        mov ebx,card_drawn_number
+        mov [edx],ebx
+        mov ebx,card_drawn_color
+        mov [edi],ebx
+        add edx,4
+        add edi,4
+    Loop LCD1
+
+
+    mov edx,OFFSET player2_cards_number
+    mov edi,OFFSET player2_cards_color
+    mov ecx,8
+    LCD2:       ;loop for card drawn for player 2
+        call Card_Draw
+        mov ebx,card_drawn_number
+        mov [edx],ebx
+        mov ebx,card_drawn_color
+        mov [edi],ebx
+        add edx,4
+        add edi,4
+    Loop LCD2
+
+
+    ret
+Deal_Cards ENDP
+
+
+Card_Draw PROC USES edx eax ecx ebx
+    
+    mov edx,OFFSET deck_color
+    mov eax,[edx]
+    mov card_drawn_color,eax
+    mov [edx],eax
+    mov edx,OFFSET deck_number
+    mov eax,[edx]
+    mov card_drawn_number,eax
+    mov [edx],eax
+    dec deck_length
+    mov ecx,deck_length
+    mov edx,OFFSET deck_color
+    LCDC:
+        mov eax,[edx+4]
+        mov [edx],eax
+        add edx,4
+    Loop LCDC
+    mov ecx,deck_length
+    mov edx,OFFSET deck_number
+    LCDN:
+        xchg eax,[edx+4]
+        xchg [edx],eax
+        add edx,4
+    Loop LCDN
+
+
+    mov ebx,4
+    mov eax,deck_length
+    mul ebx
+    mov ebx,0
+    mov edx,OFFSET deck_number
+    mov [edx+eax],ebx
+    mov edx,OFFSET deck_color
+    mov [edx+eax],ebx
+
+
+    ret
+Card_Draw ENDP
+
+
+Player1_Turn PROC USES eax ebx edx ecx edi esi
+    
+    call CRLF
+    mov ebx,4
+    mwrite "Player 1 turn"
+    call CRLF
+    call Print_Deck_Player1
+    call CRLF
+    mov eax,0
+    mwrite "Press 100 to skip , Enter your index number = "
+    call ReadDec
+    cmp eax,100
+    je skipTurn1
+    call CRLF
+    cmp eax,18
+    jg tryA1
+        sub eax,1
+        mul ebx
+        mov edx,OFFSET player1_cards_color
+        mov edi,OFFSET player1_cards_number
+        add edx,eax
+        add edi,eax
+        mov eax,[edx]
+        mov ebx,[edi]
+        cmp top_card_color,eax
+        je move1
+        cmp top_card_number,ebx
+        je move1
+        jmp tryA1
+        move1:
+        mov esi,0
+        mov [edx],esi
+        mov [edi],esi
+        mov top_card_color,eax
+        mov top_card_number,ebx
+        mov eax,player1_cards_length
+        sub eax,1
+        mov player1_cards_length,eax
+        cmp eax,0
+        je endd
+        cmp ebx,10
+        je card_skip1
+        cmp ebx,11
+        je card_skip1
+        cmp ebx,12
+        je card_draw1
+        mov ebx,2
+        mov turn,ebx
+        call Play_Game
+        card_skip1:
+        mov ebx,1
+        mov turn,ebx
+        call Play_Game
+        card_draw1:
+        call Player2_Skipped_Card
+        call Player2_Skipped_Card
+        mov ebx,2
+        mov turn,ebx
+        call Play_Game
+        endd:
+        call CRLF
+        mwrite "Player 1 wins !!"
+        call CRLF
+        exit
+    tryA1:
+    call CRLF
+    mwrite "Invalid input , try again !!"
+    call Player1_Turn
+    call CRLF
+    skipTurn1:
+    call Player1_Skipped
+    ret
+Player1_Turn ENDP
+
+
+Player1_Skipped PROC USES esi edx edi ecx
+    
+    mov esi,player1_cards_length
+    add esi,1
+    mov player1_cards_length,esi
+    mov esi,0
+    call Card_Draw
+    mov edx,OFFSET player1_cards_color
+    mov edi,OFFSET player1_cards_number
+    mov ecx,18
+    LT1:
+        cmp esi,[edx]
+        je fnd
+        add edx,4
+        add edi,4
+    Loop LT1
+    ret
+    fnd:
+    mov esi,card_drawn_color
+    mov [edx],esi
+    mov esi,card_drawn_number
+    mov [edi],esi
+    mov esi,2
+    mov turn,esi
+    call Play_Game
+    ret
+Player1_Skipped ENDP
+
+
+Player1_Skipped_Card PROC USES esi edx edi ecx
+    
+    mov esi,player1_cards_length
+    add esi,1
+    mov player1_cards_length,esi
+    mov esi,0
+    call Card_Draw
+    mov edx,OFFSET player1_cards_color
+    mov edi,OFFSET player1_cards_number
+    mov ecx,18
+    LT1:
+        cmp esi,[edx]
+        je fnd
+        add edx,4
+        add edi,4
+    Loop LT1
+    ret
+    fnd:
+    mov esi,card_drawn_color
+    mov [edx],esi
+    mov esi,card_drawn_number
+    mov [edi],esi
+    ret
+Player1_Skipped_Card ENDP
+
+
+Player2_Skipped PROC USES esi edx edi ecx
+    
+    mov esi,player2_cards_length
+    add esi,1
+    mov player2_cards_length,esi
+    mov esi,0
+    call Card_Draw
+    mov edx,OFFSET player2_cards_color
+    mov edi,OFFSET player2_cards_number
+    mov ecx,18
+    LT2:
+        cmp esi,[edx]
+        je fnd2
+        add edx,4
+        add edi,4
+    Loop LT2
+    ret
+    fnd2:
+    mov esi,card_drawn_color
+    mov [edx],esi
+    mov esi,card_drawn_number
+    mov [edi],esi
+    mov esi,1
+    mov turn,esi
+    call Play_Game
+    ret
+Player2_Skipped ENDP
+
+
+Player2_Skipped_Card PROC USES esi edx edi ecx
+    
+    mov esi,player2_cards_length
+    add esi,1
+    mov player2_cards_length,esi
+    mov esi,0
+    call Card_Draw
+    mov edx,OFFSET player2_cards_color
+    mov edi,OFFSET player2_cards_number
+    mov ecx,18
+    LT2:
+        cmp esi,[edx]
+        je fnd2
+        add edx,4
+        add edi,4
+    Loop LT2
+    ret
+    fnd2:
+    mov esi,card_drawn_color
+    mov [edx],esi
+    mov esi,card_drawn_number
+    mov [edi],esi
+    ret
+Player2_Skipped_Card ENDP
+
+
+Player2_Turn PROC USES eax ebx edx ecx edi esi
+    
+    call CRLF
+    mov ebx,4
+    mwrite "Player 2 turn"
+    call CRLF
+    call Print_Deck_Player2
+    call CRLF
+    mov eax,0
+    mwrite "Press 100 to skip , Enter your index number = "
+    call ReadDec
+    cmp eax,100
+    je skipTurn2
+    call CRLF
+    cmp eax,18
+    jg tryA2
+        sub eax,1
+        mul ebx
+        mov edx,OFFSET player2_cards_color
+        mov edi,OFFSET player2_cards_number
+        add edx,eax
+        add edi,eax
+        mov eax,[edx]
+        mov ebx,[edi]
+        cmp top_card_color,eax
+        je move2
+        cmp top_card_number,ebx
+        je move2
+        jmp tryA2
+        move2:
+        mov esi,0
+        mov [edx],esi
+        mov [edi],esi
+        mov top_card_color,eax
+        mov top_card_number,ebx
+        mov eax,player2_cards_length
+        sub eax,1
+        mov player2_cards_length,eax
+        cmp eax,0
+        je endd2
+        cmp ebx,10
+        je card_skip2
+        cmp ebx,11
+        je card_skip2
+        cmp ebx,12
+        je card_draw2
+        mov ebx,1
+        mov turn,ebx
+        call Play_Game
+        card_skip2:
+        mov ebx,2
+        mov turn,ebx
+        call Play_Game
+        card_draw2:
+        call Player1_Skipped_Card
+        call Player1_Skipped_Card
+        mov ebx,1
+        mov turn,ebx
+        call Play_Game
+        endd2:
+        call CRLF
+        mwrite "Player 2 wins !!"
+        call CRLF
+        exit
+    tryA2:
+    call CRLF
+    mwrite "Invalid input , try again !!"
+    call Player2_Turn
+    call CRLF
+    skipTurn2:
+    call Player2_Skipped
+    ret
+Player2_Turn ENDP
+
+
+
+
+Play_Game PROC  USES eax
+    
+    call CRLF
+    mwrite "Top card = "
+    mov eax,top_card_color
+    call WriteChar
+    mov eax,top_card_number
+    call WriteDec
+    call CRLF
+    call CRLF
+    mov ecx,2
+    LG:
+        mov eax,turn
+        cmp eax,1
+        jne skp1
+            call Player1_Turn
+        skp1:
+            call Player2_Turn
+        mov ecx,2
+    Loop LG
+
+
+    ret
+Play_Game ENDP
+
+
+Test1 PROC USES edx edi ecx esi
+    
+    mov edx,OFFSET player1_cards_color
+    mov esi,'r'
+    mov ecx,8
+    LT1:
+        mov [edx],esi
+        add edx,4
+    Loop LT1
+    sub edx,4
+    mov esi,'g'
+    mov [edx],esi
+    mov edi,OFFSET player1_cards_number
+    mov esi,10
+    mov [edi],esi
+    add edi,4
+    mov esi,11
+    mov [edi],esi
+    add edi,4
+    mov esi,12
+    mov [edi],esi
+    add edi,20
+    mov esi,4
+    mov [edi],esi
+    sub edi,4
+    mov [edi],esi
+
+
+    ret
+Test1 ENDP
+
+
+
+
+
+
+
+
+Set_Deck PROC USES edx edi ecx eax ebx
+    
+    mov edi,OFFSET deck_color
+    mov ecx,25
+    L1:
+        mov eax,'r'
+        mov [edi],eax
+        add edi,4
+        mov eax,'b'
+        mov [edi],eax
+        add edi,4
+        mov eax,'g'
+        mov [edi],eax
+        add edi,4
+        mov eax,'y'
+        mov [edi],eax
+        add edi,4
+    Loop L1
+
+
+    mov ecx,4
+    L11:
+        mov eax,'w'
+        mov [edi],eax
+        add edi,4
+        mov eax,'W'
+        mov [edi],eax
+        add edi,4
+    Loop L11
+
+
+    mov edi,OFFSET deck_number
+    mov ecx,4
+    L2:
+        push ecx
+        mov ebx,9
+        mov ecx,10
+        L222:
+            mov [edi],ebx
+            sub ebx,1
+            add edi,4
+        Loop L222
+        mov ebx,9
+        mov ecx,9
+        L2222:
+            mov [edi],ebx
+            sub ebx,1
+            add edi,4
+        Loop L2222
+        mov ebx,10
+        mov ecx,3
+        L2223:
+            mov [edi],ebx
+            add ebx,1
+            add edi,4
+        Loop L2223
+        mov ebx,10
+        mov ecx,3
+        L22233:
+            mov [edi],ebx
+            add ebx,1
+            add edi,4
+        Loop L22233
+        pop ecx
+    Loop L2
+  
+    mov ecx,4
+    L22:
+        mov eax,13
+        mov [edi],eax
+        add edi,4
+        mov eax,14
+        mov [edi],eax
+        add edi,4
+    Loop L22
+
+
+    ret
+Set_Deck ENDP
+
+
+END main
